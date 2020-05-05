@@ -14,7 +14,18 @@ GRIDWIDTH = (int)(WIDTH / TILE_SIZE)
 GRIDHEIGHT = (int)(HEIGHT / TILE_SIZE)
 
 
+class Node:
+    def __init__(self, x, y, surface):
+        self.x = x
+        self.y = y
+        self.size = TILE_SIZE
+        self.rect = (self.x, self.y, self.size, self.size)
+        self.color = (0, 0, 0)
+        self.width = 1
+        self.screen = surface
 
+    def draw(self):
+        pygame.draw.rect(self.screen, self.color, self.rect, self.width)
 
 
 def main():
@@ -24,8 +35,8 @@ def main():
 
     for y in range(GRIDHEIGHT):
         for x in range(GRIDWIDTH):
-            pygame.draw.rect(screen, (0, 0, 0), (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
-            
+            n = Node(x * 32, y * 32, screen)
+            n.draw()
 
     while (True):
         for event in pygame.event.get():
