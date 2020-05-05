@@ -1,1 +1,1 @@
-# astar_pathfinding
+# A* Path Finding Visualisation
