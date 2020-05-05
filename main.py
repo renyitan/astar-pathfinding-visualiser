@@ -113,6 +113,12 @@ def get_distance(node_a, node_b):
     dist_x = abs(node_a.x - node_b.x)
     dist_y = abs(node_a.y - node_b.y)
 
+    if dist_x > dist_y:
+        return 1.4 * dist_y + (dist_x - dist_y)
+    else:
+        return 1.4 * dist_x + (dist_y - dist_x)
+
+
 def pathfinding(start_node, end_node):
     open_set = []   # set of nodes to be evaluated
     closed_set = []  # set of node already evaluated
@@ -139,12 +145,13 @@ def pathfinding(start_node, end_node):
 
 
 
-
 def main():
     pygame.init()
 
     start_pos = grid[0][0]
     end_pos = grid[1][1]
+
+    print(get_distance(grid[0][0], grid[2,5]))
 
     while (True):
 
