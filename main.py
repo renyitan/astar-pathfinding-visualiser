@@ -28,14 +28,21 @@ screen.fill(COLOR_WHITE)
 
 class Tile:
 
-    def __init__(self, row, col):
-        self.x = col
-        self.y = row
+    def __init__(self, i, j):
+        self.x = j
+        self.y = i
         self.is_obstacle = False
         self.is_source = False
         self.is_target = False
         self.color = COLOR_BLACK  # default color
         self.t_type = 1  # default, no fill
+
+        self.g_cost = 0
+        self.h_cost = 0
+
+    # getter function for f_cost
+    def f_cost(self):
+        return self.h_cost + self.g_cost
 
     def show(self):
         if self.is_obstacle:
@@ -44,6 +51,18 @@ class Tile:
             self.color, self.t_type = COLOR_BLUE, 0
         pygame.draw.rect(screen, self.color, (self.x * TILE_SIZE,
                                               self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), self.t_type)
+
+    def show_open(self):
+        pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
+                                               self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+
+    def show_closed(self):
+        pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
+                                             self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+
+    def show_path(self):
+        pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
+                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
 
 
 # Create grid 2d array; grid[row][col]
@@ -76,11 +95,56 @@ def draw_obstacle(position):
     selected_tile.is_obstacle = True
 
 
+def get_neighbours(node):
+    neighbours = []
+    for x in range(-1, 2):  # -1,0,1
+        for y in range(-1, 2):
+            if x == 0 and y == 0:
+                continue
+
+            # checking the peripheral nodes
+            check_x, check_y = node.x + x, node.y + y
+            if check_x >= 0 and check_x < NUM_COLS and check_y >= 0 and check_y < NUM_ROWS:
+                neighbours.append(grid[check_y][check_x])
+
+    return neighbours
+
+def get_distance(node_a, node_b):
+    dist_x = abs(node_a.x - node_b.x)
+    dist_y = abs(node_a.y - node_b.y)
+
+def pathfinding(start_node, end_node):
+    open_set = []   # set of nodes to be evaluated
+    closed_set = []  # set of node already evaluated
+
+    open_set.append(start_node)
+
+    while (len(open_set) > 0):
+        current_node = open_set[0]
+
+        # search for the node with the lowest f_cost
+        for i in range(len(open_set)):
+            if open_set[i].f_cost < current_node.f_cost or (open_set[i].f_cost == current_node.f_cost and open_set[i].h_cost < current_node.h_cost):
+                current_node = open_set[i]
+
+        open_set.remove(current_node)
+        closed_set.append(current_node)
+
+        if current_node == end_node:
+            return
+
+        for neighbour in get_neighbours(current_node):
+            if neighbour.is_obstacle or neighbour in closed_set:
+                continue
+
+
+
+
 def main():
     pygame.init()
 
-    start_node = (0, 0)
-    end_node = (0,0)
+    start_pos = grid[0][0]
+    end_pos = grid[1][1]
 
     while (True):
 
@@ -94,20 +158,23 @@ def main():
                 pygame.quit()
                 sys.exit()
 
+            # run path finding algorithm
+            if pygame.key.get_pressed()[K_SPACE]:
+                pathfinding(start_pos, end_pos)
+
             # select start node
             if pygame.key.get_pressed()[K_s] and pygame.mouse.get_pressed()[0]:
                 x, y = pygame.mouse.get_pos()
                 r, c, = y // TILE_SIZE, x // TILE_SIZE
                 grid[r][c].is_source = True
-                start_node = (r,c)
+                start_node = grid[r][c]
 
             # select end node
             elif pygame.key.get_pressed()[K_e] and pygame.mouse.get_pressed()[0]:
                 x, y = pygame.mouse.get_pos()
                 r, c, = y // TILE_SIZE, x // TILE_SIZE
                 grid[r][c].is_target = True
-                end_node = (r,c)
-
+                end_node = grid[r][c]
 
             # checks for left mouse down. (left, scroll, right): boolean
             elif pygame.mouse.get_pressed()[0]:
