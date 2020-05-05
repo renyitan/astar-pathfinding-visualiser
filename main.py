@@ -39,8 +39,13 @@ class Tile:
 
         self.g_cost = 0
         self.h_cost = 0
+        self.parent = None
+
+        # self.is_opened = False
+        # self.is_closed = False
 
     # getter function for f_cost
+    @property
     def f_cost(self):
         return self.h_cost + self.g_cost
 
@@ -55,10 +60,18 @@ class Tile:
     def show_open(self):
         pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
                                                self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+        # pygame.display.update(self.x * TILE_SIZE, self.y *
+        #                       TILE_SIZE, TILE_SIZE, TILE_SIZE)
+
+        # pygame.display.update()
+        # pygame.display.flip()
 
     def show_closed(self):
         pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+        # pygame.display.update(self.x * TILE_SIZE, self.y *
+        #                       TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        # pygame.display.flip()
 
     def show_path(self):
         pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
@@ -109,6 +122,7 @@ def get_neighbours(node):
 
     return neighbours
 
+
 def get_distance(node_a, node_b):
     dist_x = abs(node_a.x - node_b.x)
     dist_y = abs(node_a.y - node_b.y)
@@ -117,6 +131,22 @@ def get_distance(node_a, node_b):
         return 1.4 * dist_y + (dist_x - dist_y)
     else:
         return 1.4 * dist_x + (dist_y - dist_x)
+
+
+def retrace_path(start_node, end_node):
+    path = []
+    current_node = end_node
+    while current_node is not start_node:
+        path.append(current_node)
+        current_node = current_node.parent
+
+    path.reverse()
+    draw_path(path)
+
+
+def draw_path(path):
+    for p in path:
+        p.show_path()
 
 
 def pathfinding(start_node, end_node):
@@ -135,30 +165,53 @@ def pathfinding(start_node, end_node):
 
         open_set.remove(current_node)
         closed_set.append(current_node)
+        # current_node.show_closed()
 
         if current_node == end_node:
+            retrace_path(start_node, end_node)
             return
 
         for neighbour in get_neighbours(current_node):
             if neighbour.is_obstacle or neighbour in closed_set:
                 continue
 
+            movement_cost = current_node.g_cost + \
+                get_distance(current_node, neighbour)
+            if movement_cost < neighbour.g_cost or neighbour not in open_set:
+                neighbour.g_cost = movement_cost
+                neighbour.h_cost = get_distance(neighbour, end_node)
+                neighbour.parent = current_node
+
+            if neighbour not in open_set:
+                open_set.append(neighbour)
+                # neighbour.show_open()
+
+        # for node in open_set:
+        #     node.show_open()
+        #     pygame.display.update()
+
+        # for node in closed_set:
+        #     node.show_closed()
+        #     pygame.display.update()
+
+clock = pygame.time.Clock()
 
 
 def main():
     pygame.init()
+    clock = pygame.time.Clock()
+    clock.tick(60)
 
-    start_pos = grid[0][0]
-    end_pos = grid[1][1]
+    start_pos = grid[5][5]
+    end_pos = grid[23][28]
 
-    print(get_distance(grid[0][0], grid[2,5]))
-
-    while (True):
+    while True:
 
         # display grid
         show_grid()
 
         events = pygame.event.get()
+        # pygame.display.update()
 
         for ev in events:
             if ev.type == pygame.QUIT:
@@ -188,7 +241,7 @@ def main():
                 position = pygame.mouse.get_pos()  # returns (x,y)
                 draw_obstacle(position)
 
-        pygame.display.update()
+        pygame.display.flip()
 
 
 if __name__ == "__main__":
