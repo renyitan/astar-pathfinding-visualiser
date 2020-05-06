@@ -22,20 +22,20 @@ COLOR_BLACK = (0, 0, 0)
 COLOR_GREY = (40, 40, 40)
 
 # initialisation
+pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption('')
+
+clock = pygame.time.Clock()
 screen.fill(COLOR_WHITE)
 
 
-class Tile:
+class Node:
 
     def __init__(self, i, j):
         self.x = j
         self.y = i
-        self.is_obstacle = False
-        self.is_source = False
-        self.is_target = False
-        self.color = COLOR_BLACK  # default color
-        self.t_type = 1  # default, no fill
+        self.mode = 'default'
 
         self.g_cost = 0
         self.h_cost = 0
@@ -47,38 +47,29 @@ class Tile:
         return self.h_cost + self.g_cost
 
     def show(self):
-        if self.is_obstacle:
-            self.color, self.t_type = COLOR_GREY, 0
-        elif self.is_target or self.is_source:
-            self.color, self.t_type = COLOR_BLUE, 0
-        pygame.draw.rect(screen, self.color, (self.x * TILE_SIZE,
-                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), self.t_type)
-
-    def show_open(self):
-        pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
-                                               self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-
-    def show_closed(self):
-        pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
-                                             self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-
-    def show_path(self):
-        pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
-                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-    
-    def show_obstacle(self):
-        self.is_obstacle = True
-        pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
-                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-        
+        if self.mode == 'default':
+            pygame.draw.rect(screen, COLOR_BLACK, (self.x * TILE_SIZE,
+                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+        if self.mode == 'obstacle':
+            pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
+                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+        if self.mode == 'open':
+            pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
+                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+        if self.mode == 'closed':
+            pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
+                                                 self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
 
 
 # Create grid 2d array; grid[row][col]
 grid = [[0 for i in range(NUM_ROWS)] for j in range(NUM_COLS)]
+snap = []
+
 # fill grid with empty Tile
 for i in range(NUM_ROWS):
     for j in range(NUM_COLS):
-        grid[i][j] = Tile(i, j)
+        grid[i][j] = Node(i, j)
+        snap.append(pygame.Rect(j, i, TILE_SIZE, TILE_SIZE))
 
 # set screen borders as obstacles
 for i in range(NUM_ROWS):
@@ -89,21 +80,10 @@ for i in range(NUM_ROWS):
     grid[i][NUM_COLS-1].is_obstacle = True
 
 
-
 def show_grid():
     for i in range(NUM_ROWS):
         for j in range(NUM_COLS):
             grid[i][j].show()
-
-show_grid()
-
-def draw_obstacle(position):
-    x, y = position
-    # map to grids
-    r, c, = y // TILE_SIZE, x // TILE_SIZE
-    selected_tile = grid[r][c]
-    selected_tile.is_obstacle = True
-
 
 def get_neighbours(node):
     neighbours = []
@@ -129,6 +109,88 @@ def get_distance(node_a, node_b):
     else:
         return 1.4 * dist_x + (dist_y - dist_x)
 
+# create start and end points
+start_node = grid[5][5]
+end_node = grid[23][28]
+
+open_set = []   # set of nodes to be evaluated
+closed_set = []  # set of node already evaluated
+
+done = False
+num = 0
+
+# delay
+counter = 0
+step = 0
+doOnce = 0
+start = False
+
+open_set.append(start_node)
+
+while not done:
+    events = pygame.event.get()
+    for ev in events:
+        if ev.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+    if not start:
+        pos = pygame.mouse.get_pos()
+        pressed = pygame.mouse.get_pressed()
+        key = pygame.key.get_pressed()
+
+        if pygame.key.get_pressed()[K_SPACE]:
+            start = True
+
+        if pygame.mouse.get_pressed()[0]:
+            x, y = pygame.mouse.get_pos()
+            r, c, = y // TILE_SIZE, x // TILE_SIZE
+            grid[r][c].mode = 'obstacle'
+            grid[r][c].show()
+
+    current_node = open_set[0]
+
+    if start:
+        if step == counter:
+            if (len(open_set)) == 0:
+                break
+
+            show_grid()
+
+            # look for node with lowest f_cost
+            for i in range(len(open_set)):
+                if open_set[i].f_cost < current_node.f_cost or (open_set[i].f_cost == current_node.f_cost and open_set[i].h_cost < current_node.h_cost):
+                    current_node = open_set[i]
+                    current_node.mode = 'open'
+
+            open_set.remove(current_node)
+            current_node.mode = 'closed'
+            closed_set.append(current_node)
+
+            if current_node == end_node:
+                done = True
+
+            for neighbour in get_neighbours(current_node):
+                if neighbour.mode == 'obstacle' or neighbour in closed_set:
+                    continue
+
+                movement_cost = current_node.g_cost + \
+                    get_distance(current_node, neighbour)
+                if movement_cost < neighbour.g_cost or neighbour not in open_set:
+                    neighbour.g_cost = movement_cost
+                    neighbour.h_cost = get_distance(neighbour, end_node)
+                    neighbour.parent = current_node
+                if neighbour not in open_set:
+                    neighbour.mode = 'open'
+                    open_set.append(neighbour)
+
+    pygame.display.update()
+    clock.tick(FPS)
+
+
+
+
+
 
 def retrace_path(start_node, end_node):
     path = []
@@ -147,8 +209,6 @@ def draw_path(path):
 
 
 def pathfinding(start_node, end_node):
-    open_set = []   # set of nodes to be evaluated
-    closed_set = []  # set of node already evaluated
 
     open_set.append(start_node)
 
@@ -192,60 +252,49 @@ def pathfinding(start_node, end_node):
         #     node.show_closed()
         #     pygame.display.flip()
 
+# while True:
+#     # clock.tick(60)
+#     # display grid
+#     # show_grid()
 
-clock = pygame.time.Clock()
+#     events = pygame.event.get()
+#     # pygame.display.update()
 
+#     # run path finding algorithm
+#     if pygame.key.get_pressed()[K_SPACE]:
+#         pathfinding(start_pos, end_pos)
 
-def main():
-    pygame.init()
+#     for ev in events:
+#         if ev.type == pygame.QUIT:
+#             pygame.quit()
+#             sys.exit()
 
-    start_pos = grid[5][5]
-    end_pos = grid[23][28]
+#     # select start node
+#     if pygame.key.get_pressed()[K_s] and pygame.mouse.get_pressed()[0]:
+#         x, y = pygame.mouse.get_pos()
+#         r, c, = y // TILE_SIZE, x // TILE_SIZE
+#         grid[r][c].is_source = True
+#         start_node = grid[r][c]
 
+#     # select end node
+#     elif pygame.key.get_pressed()[K_e] and pygame.mouse.get_pressed()[0]:
+#         x, y = pygame.mouse.get_pos()
+#         r, c, = y // TILE_SIZE, x // TILE_SIZE
+#         grid[r][c].is_target = True
+#         end_node = grid[r][c]
 
-    while True:
-        clock.tick(60)
-        # display grid
-        # show_grid()
+#     # checks for left mouse down. (left, scroll, right): boolean
+#     elif pygame.mouse.get_pressed()[0]:
+#         position = pygame.mouse.get_pos()  # returns (x,y)
+#         # draw_obstacle(position)
 
-        events = pygame.event.get()
-        # pygame.display.update()
+#         x, y = position
+#         # map to grids
+#         r, c, = y // TILE_SIZE, x // TILE_SIZE
+#         grid[r][c].show_obstacle()
 
-        # run path finding algorithm
-        if pygame.key.get_pressed()[K_SPACE]:
-            pathfinding(start_pos, end_pos)
-
-        for ev in events:
-            if ev.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-        # select start node
-        if pygame.key.get_pressed()[K_s] and pygame.mouse.get_pressed()[0]:
-            x, y = pygame.mouse.get_pos()
-            r, c, = y // TILE_SIZE, x // TILE_SIZE
-            grid[r][c].is_source = True
-            start_node = grid[r][c]
-
-        # select end node
-        elif pygame.key.get_pressed()[K_e] and pygame.mouse.get_pressed()[0]:
-            x, y = pygame.mouse.get_pos()
-            r, c, = y // TILE_SIZE, x // TILE_SIZE
-            grid[r][c].is_target = True
-            end_node = grid[r][c]
-
-        # checks for left mouse down. (left, scroll, right): boolean
-        elif pygame.mouse.get_pressed()[0]:
-            position = pygame.mouse.get_pos()  # returns (x,y)
-            # draw_obstacle(position)
-
-            x, y = position
-            # map to grids
-            r, c, = y // TILE_SIZE, x // TILE_SIZE
-            grid[r][c].show_obstacle()
-
-        pygame.display.update()
+#     pygame.display.update()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
