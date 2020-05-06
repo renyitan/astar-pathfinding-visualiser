@@ -5,7 +5,7 @@ import sys
 # game settings
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
-FPS = 60
+FPS = 100
 TITLE = 'GRID'
 
 TILE_SIZE = 16
@@ -29,7 +29,6 @@ pygame.display.set_caption('')
 clock = pygame.time.Clock()
 screen.fill(COLOR_WHITE)
 
-
 class Node:
     def __init__(self, i, j):
         self.x = j
@@ -47,6 +46,8 @@ class Node:
 
     def show(self):
         if self.mode == 'default':
+            pygame.draw.rect(screen, COLOR_WHITE, (self.x * TILE_SIZE,
+                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
             pygame.draw.rect(screen, COLOR_BLACK, (self.x * TILE_SIZE,
                                                    self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
         if self.mode == 'obstacle':
@@ -55,13 +56,19 @@ class Node:
         if self.mode == 'open':
             pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
                                                    self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+            pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
+                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
 
         if self.mode == 'closed':
             pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+            pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
+                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
         if self.mode == 'start' or self.mode == 'end' or self.mode == 'path':
             pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+            pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
+                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
 
 # Create grid 2d array; grid[row][col]
 grid = [[0 for i in range(NUM_ROWS)] for j in range(NUM_COLS)]
@@ -103,10 +110,10 @@ def get_distance(node_a, node_b):
     return (dist_x > dist_y) if 1.4 * dist_y + (dist_x - dist_y) else 1.4 * dist_x + (dist_y - dist_x)
 
 # create start and end points
-start_node = grid[5][5]
+start_node = grid[5][45]
 start_node.mode = 'start'
 start_node.show()
-end_node = grid[30][45]
+end_node = grid[30][5]
 end_node.mode = 'end'
 end_node.show()
 
@@ -201,13 +208,24 @@ def retrace_path():
 
 paths = retrace_path()
 
+# reset grids
+def reset_grid():
+    for i in range(NUM_ROWS):
+        for j in range(NUM_COLS):
+            if grid[i][j].mode == 'obstacle':
+                continue
+            else:
+                grid[i][j].mode = 'default'
+
+reset_grid()
+
 while True:
     events = pygame.event.get()
     for ev in events:
         if ev.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-            
+
     for path in paths:
         path.mode = 'path'
     
