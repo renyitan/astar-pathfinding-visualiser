@@ -120,7 +120,6 @@ def get_neighbours(node):
 def get_distance(node_a, node_b):
     return sqrt((node_a.x - node_b.x)**2 + (node_a.y - node_b.y)**2)
 
-
 # create start and end points
 start_node = grid[5][45]
 start_node.mode, start_node.strict = 'start', True
