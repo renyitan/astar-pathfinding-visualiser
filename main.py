@@ -5,7 +5,7 @@ import sys
 # game settings
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
-FPS = 100
+FPS = 60
 TITLE = 'GRID'
 
 TILE_SIZE = 16
@@ -29,6 +29,7 @@ pygame.display.set_caption('')
 clock = pygame.time.Clock()
 screen.fill(COLOR_WHITE)
 
+
 class Node:
     def __init__(self, i, j):
         self.x = j
@@ -39,36 +40,44 @@ class Node:
         self.h_cost = 0
         self.parent = None
 
+        self.strict = False         # strict mode, for start/end nodes so that the node color does not change
+
     # getter function for f_cost
     @property
     def f_cost(self):
         return self.h_cost + self.g_cost
 
     def show(self):
-        if self.mode == 'default':
+        if self.strict:
+            pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
+                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+            pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
+                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+        elif self.mode == 'default':
             pygame.draw.rect(screen, COLOR_WHITE, (self.x * TILE_SIZE,
                                                    self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
             pygame.draw.rect(screen, COLOR_BLACK, (self.x * TILE_SIZE,
                                                    self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
-        if self.mode == 'obstacle':
+        elif self.mode == 'obstacle':
             pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-        if self.mode == 'open':
+        elif self.mode == 'open':
             pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
                                                    self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
             pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
 
-        if self.mode == 'closed':
+        elif self.mode == 'closed':
             pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
                                                  self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
             pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
-        if self.mode == 'start' or self.mode == 'end' or self.mode == 'path':
+        elif self.mode == 'start' or self.mode == 'end' or self.mode == 'path':
             pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
             pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
                                                   self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+
 
 # Create grid 2d array; grid[row][col]
 grid = [[0 for i in range(NUM_ROWS)] for j in range(NUM_COLS)]
@@ -86,10 +95,12 @@ for i in range(NUM_ROWS):
     grid[i][0].is_obstacle = True
     grid[i][NUM_COLS-1].is_obstacle = True
 
+
 def show_grid():
     for i in range(NUM_ROWS):
         for j in range(NUM_COLS):
             grid[i][j].show()
+
 
 def get_neighbours(node):
     neighbours = []
@@ -104,17 +115,19 @@ def get_neighbours(node):
                 neighbours.append(grid[check_y][check_x])
     return neighbours
 
+
 def get_distance(node_a, node_b):
     dist_x = abs(node_a.x - node_b.x)
     dist_y = abs(node_a.y - node_b.y)
     return (dist_x > dist_y) if 1.4 * dist_y + (dist_x - dist_y) else 1.4 * dist_x + (dist_y - dist_x)
 
+
 # create start and end points
 start_node = grid[5][45]
-start_node.mode = 'start'
+start_node.mode, start_node.strict = 'start', True
 start_node.show()
 end_node = grid[30][5]
-end_node.mode = 'end'
+end_node.mode, end_node.strict = 'end', True
 end_node.show()
 
 open_set = []   # set of nodes to be evaluated
@@ -149,8 +162,31 @@ while not done:
             start = True
 
         elif pygame.key.get_pressed()[K_s] and pygame.mouse.get_pressed()[0]:
-            # todo
-            continue
+            x, y = pygame.mouse.get_pos()
+            r, c, = y // TILE_SIZE, x // TILE_SIZE
+
+            old_start = start_node
+            old_start.mode, old_start.strict = 'default', False
+            old_start.show()
+
+            start_node = grid[r][c]
+            start_node.mode, start_node.strict = 'start', True
+            start_node.show()
+
+            open_set.append(start_node)
+            open_set.remove(old_start)
+
+        elif pygame.key.get_pressed()[K_e] and pygame.mouse.get_pressed()[0]:
+            x, y = pygame.mouse.get_pos()
+            r, c, = y // TILE_SIZE, x // TILE_SIZE
+
+            old_end = end_node
+            old_end.mode, old_end.strict = 'default', False
+            old_end.show()
+
+            end_node = grid[r][c]
+            end_node.mode, end_node.strict = 'end', True
+            end_node.show()
 
         elif pygame.mouse.get_pressed()[0]:
             x, y = pygame.mouse.get_pos()
@@ -158,8 +194,8 @@ while not done:
             grid[r][c].mode = 'obstacle'
             grid[r][c].show()
 
+        
     current_node = open_set[0]
-
     if start:
         if (len(open_set)) == 0:
             break
@@ -196,6 +232,7 @@ while not done:
     pygame.display.update()
     clock.tick(FPS)
 
+
 def retrace_path():
     paths = []
     current_node = end_node
@@ -206,9 +243,12 @@ def retrace_path():
     paths.reverse()
     return paths
 
+
 paths = retrace_path()
 
 # reset grids
+
+
 def reset_grid():
     for i in range(NUM_ROWS):
         for j in range(NUM_COLS):
@@ -216,6 +256,7 @@ def reset_grid():
                 continue
             else:
                 grid[i][j].mode = 'default'
+
 
 reset_grid()
 
@@ -228,12 +269,11 @@ while True:
 
     for path in paths:
         path.mode = 'path'
-    
+
     show_grid()
 
     pygame.display.update()
     clock.tick(FPS)
-
 
 
 
