@@ -17,7 +17,7 @@ python main.py
 ## Instructions
 1. Select **start node** by holding the **'S'** key and left mouse button on the grid
 2. Select **end node** by pressing the **'E'** key and left mouse button on the grid
-3. Press 'Space' to run the algorithm
+3. Press **'Space'** to run the algorithm
 
 ## Special Feature
 1. Press **'P'** to print map. Returns a map array. 
