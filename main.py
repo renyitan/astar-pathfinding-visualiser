@@ -1,5 +1,6 @@
 import pygame
 from pygame import *
+from math import sqrt
 import sys
 
 # game settings
@@ -117,9 +118,7 @@ def get_neighbours(node):
 
 
 def get_distance(node_a, node_b):
-    dist_x = abs(node_a.x - node_b.x)
-    dist_y = abs(node_a.y - node_b.y)
-    return (dist_x > dist_y) if 1.4 * dist_y + (dist_x - dist_y) else 1.4 * dist_x + (dist_y - dist_x)
+    return sqrt((node_a.x - node_b.x)**2 + (node_a.y - node_b.y)**2)
 
 
 # create start and end points
