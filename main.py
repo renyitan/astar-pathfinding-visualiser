@@ -3,6 +3,8 @@ from pygame import *
 from math import sqrt
 import sys
 
+import map_1 # custom map
+
 # game settings
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
@@ -29,7 +31,6 @@ pygame.display.set_caption('')
 
 clock = pygame.time.Clock()
 screen.fill(COLOR_WHITE)
-
 
 class Node:
     def __init__(self, i, j):
@@ -141,6 +142,25 @@ start = False
 # open_set.append(start_node)
 open_set.append(start_node)
 
+
+def print_map():
+    map = [[0 for i in range(NUM_ROWS)] for j in range(NUM_COLS)]
+    for x in range(NUM_ROWS):
+        for y in range(NUM_COLS):
+            if grid[x][y].mode == 'obstacle':
+                map[x][y] = 1
+    return map
+
+def load_map(map_file):
+    if len(map_file.map) != NUM_ROWS:
+        print('Map not the right size')
+        return
+
+    for i in range(map_file.NUM_ROWS):
+        for j in range(map_file.NUM_COLS):
+            if map_file.map[i][j] == 1:
+                grid[i][j].mode = 'obstacle'
+    
 # first render of grid
 show_grid()
 
@@ -191,6 +211,14 @@ while not done:
             r, c, = y // TILE_SIZE, x // TILE_SIZE
             grid[r][c].mode = 'obstacle'
             grid[r][c].show()
+        
+        elif pygame.key.get_pressed()[K_p]:
+                map = print_map()
+                print(map)
+        
+        elif pygame.key.get_pressed()[K_l]:
+                load_map(map_1)
+                show_grid()
 
         
     current_node = open_set[0]

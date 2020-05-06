@@ -19,6 +19,10 @@ python main.py
 2. Select **end node** by pressing the **'E'** key and left mouse button on the grid
 3. Press 'Space' to run the algorithm
 
+## Special Feature
+1. Press **'P'** to print map. Returns a map array. 
+2. Press **'L'** to load map. By default, it will load `map_1.py`
+
 
 ## References
 - [A* Pathfinding - Algorithm Explanation by Sebastian Lague](https://www.youtube.com/watch?v=-L-WgKMFuhE&t=463s)
