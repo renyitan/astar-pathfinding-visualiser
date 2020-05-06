@@ -41,9 +41,6 @@ class Tile:
         self.h_cost = 0
         self.parent = None
 
-        # self.is_opened = False
-        # self.is_closed = False
-
     # getter function for f_cost
     @property
     def f_cost(self):
@@ -60,22 +57,20 @@ class Tile:
     def show_open(self):
         pygame.draw.rect(screen, COLOR_GREEN, (self.x * TILE_SIZE,
                                                self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-        # pygame.display.update(self.x * TILE_SIZE, self.y *
-        #                       TILE_SIZE, TILE_SIZE, TILE_SIZE)
-
-        # pygame.display.update()
-        # pygame.display.flip()
 
     def show_closed(self):
         pygame.draw.rect(screen, COLOR_RED, (self.x * TILE_SIZE,
                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
-        # pygame.display.update(self.x * TILE_SIZE, self.y *
-        #                       TILE_SIZE, TILE_SIZE, TILE_SIZE)
-        # pygame.display.flip()
 
     def show_path(self):
         pygame.draw.rect(screen, COLOR_BLUE, (self.x * TILE_SIZE,
                                               self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+    
+    def show_obstacle(self):
+        self.is_obstacle = True
+        pygame.draw.rect(screen, COLOR_GREY, (self.x * TILE_SIZE,
+                                              self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), 0)
+        
 
 
 # Create grid 2d array; grid[row][col]
@@ -94,11 +89,13 @@ for i in range(NUM_ROWS):
     grid[i][NUM_COLS-1].is_obstacle = True
 
 
+
 def show_grid():
     for i in range(NUM_ROWS):
         for j in range(NUM_COLS):
             grid[i][j].show()
 
+show_grid()
 
 def draw_obstacle(position):
     x, y = position
@@ -162,10 +159,11 @@ def pathfinding(start_node, end_node):
         for i in range(len(open_set)):
             if open_set[i].f_cost < current_node.f_cost or (open_set[i].f_cost == current_node.f_cost and open_set[i].h_cost < current_node.h_cost):
                 current_node = open_set[i]
+                current_node.is_opened = True
 
         open_set.remove(current_node)
         closed_set.append(current_node)
-        # current_node.show_closed()
+        current_node.show_closed()
 
         if current_node == end_node:
             retrace_path(start_node, end_node)
@@ -184,64 +182,69 @@ def pathfinding(start_node, end_node):
 
             if neighbour not in open_set:
                 open_set.append(neighbour)
-                # neighbour.show_open()
+                neighbour.show_open()
 
         # for node in open_set:
         #     node.show_open()
-        #     pygame.display.update()
+        #     pygame.display.flip()
 
         # for node in closed_set:
         #     node.show_closed()
-        #     pygame.display.update()
+        #     pygame.display.flip()
+
 
 clock = pygame.time.Clock()
 
 
 def main():
     pygame.init()
-    clock = pygame.time.Clock()
-    clock.tick(60)
 
     start_pos = grid[5][5]
     end_pos = grid[23][28]
 
-    while True:
 
+    while True:
+        clock.tick(60)
         # display grid
-        show_grid()
+        # show_grid()
 
         events = pygame.event.get()
         # pygame.display.update()
+
+        # run path finding algorithm
+        if pygame.key.get_pressed()[K_SPACE]:
+            pathfinding(start_pos, end_pos)
 
         for ev in events:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            # run path finding algorithm
-            if pygame.key.get_pressed()[K_SPACE]:
-                pathfinding(start_pos, end_pos)
+        # select start node
+        if pygame.key.get_pressed()[K_s] and pygame.mouse.get_pressed()[0]:
+            x, y = pygame.mouse.get_pos()
+            r, c, = y // TILE_SIZE, x // TILE_SIZE
+            grid[r][c].is_source = True
+            start_node = grid[r][c]
 
-            # select start node
-            if pygame.key.get_pressed()[K_s] and pygame.mouse.get_pressed()[0]:
-                x, y = pygame.mouse.get_pos()
-                r, c, = y // TILE_SIZE, x // TILE_SIZE
-                grid[r][c].is_source = True
-                start_node = grid[r][c]
+        # select end node
+        elif pygame.key.get_pressed()[K_e] and pygame.mouse.get_pressed()[0]:
+            x, y = pygame.mouse.get_pos()
+            r, c, = y // TILE_SIZE, x // TILE_SIZE
+            grid[r][c].is_target = True
+            end_node = grid[r][c]
 
-            # select end node
-            elif pygame.key.get_pressed()[K_e] and pygame.mouse.get_pressed()[0]:
-                x, y = pygame.mouse.get_pos()
-                r, c, = y // TILE_SIZE, x // TILE_SIZE
-                grid[r][c].is_target = True
-                end_node = grid[r][c]
+        # checks for left mouse down. (left, scroll, right): boolean
+        elif pygame.mouse.get_pressed()[0]:
+            position = pygame.mouse.get_pos()  # returns (x,y)
+            # draw_obstacle(position)
 
-            # checks for left mouse down. (left, scroll, right): boolean
-            elif pygame.mouse.get_pressed()[0]:
-                position = pygame.mouse.get_pos()  # returns (x,y)
-                draw_obstacle(position)
+            x, y = position
+            # map to grids
+            r, c, = y // TILE_SIZE, x // TILE_SIZE
+            grid[r][c].show_obstacle()
 
-        pygame.display.flip()
+        pygame.display.update()
 
 
 if __name__ == "__main__":
