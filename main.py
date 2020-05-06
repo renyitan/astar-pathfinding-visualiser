@@ -3,7 +3,7 @@ from pygame import *
 from math import sqrt
 import sys
 
-import map_1 # custom map
+import map_1  # custom map
 
 # game settings
 SCREEN_WIDTH = 800
@@ -32,6 +32,7 @@ pygame.display.set_caption('')
 clock = pygame.time.Clock()
 screen.fill(COLOR_WHITE)
 
+
 class Node:
     def __init__(self, i, j):
         self.x = j
@@ -42,7 +43,8 @@ class Node:
         self.h_cost = 0
         self.parent = None
 
-        self.strict = False         # strict mode, for start/end nodes so that the node color does not change
+        # strict mode, for start/end nodes so that the node color does not change
+        self.strict = False
 
     # getter function for f_cost
     @property
@@ -121,6 +123,7 @@ def get_neighbours(node):
 def get_distance(node_a, node_b):
     return sqrt((node_a.x - node_b.x)**2 + (node_a.y - node_b.y)**2)
 
+
 # create start and end points
 start_node = grid[5][45]
 start_node.mode, start_node.strict = 'start', True
@@ -151,6 +154,7 @@ def print_map():
                 map[x][y] = 1
     return map
 
+
 def load_map(map_file):
     if len(map_file.map) != NUM_ROWS:
         print('Map not the right size')
@@ -160,7 +164,8 @@ def load_map(map_file):
         for j in range(map_file.NUM_COLS):
             if map_file.map[i][j] == 1:
                 grid[i][j].mode = 'obstacle'
-    
+
+
 # first render of grid
 show_grid()
 
@@ -171,6 +176,7 @@ while not done:
             pygame.quit()
             sys.exit()
 
+    pressed = pygame.mouse.get_pressed()
     if not start:
         pos = pygame.mouse.get_pos()
         pressed = pygame.mouse.get_pressed()
@@ -211,18 +217,26 @@ while not done:
             r, c, = y // TILE_SIZE, x // TILE_SIZE
             grid[r][c].mode = 'obstacle'
             grid[r][c].show()
-        
-        elif pygame.key.get_pressed()[K_p]:
-                map = print_map()
-                print(map)
-        
-        elif pygame.key.get_pressed()[K_l]:
-                load_map(map_1)
-                show_grid()
 
-        
+        elif pygame.key.get_pressed()[K_p]:
+            map = print_map()
+            print(map)
+
+        elif pygame.key.get_pressed()[K_l]:
+            load_map(map_1)
+            show_grid()
+
     current_node = open_set[0]
+
+    # for interactive mode, draw obstacle while algo is running. 
+    # if pygame.mouse.get_pressed()[0]:
+    #     x, y = pygame.mouse.get_pos()
+    #     r, c, = y // TILE_SIZE, x // TILE_SIZE
+    #     grid[r][c].mode = 'obstacle'
+    #     grid[r][c].show()
+
     if start:
+
         if (len(open_set)) == 0:
             break
 
